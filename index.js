@@ -1,3 +1,4 @@
+// Arkhon AI v4-human-varied: respuestas locales variadas y menos mecanicas.
 const canvas = document.getElementById("signalCanvas");
 const ctx = canvas.getContext("2d");
 const speakButton = document.getElementById("speakButton");
@@ -10,6 +11,8 @@ const queryForm = document.getElementById("queryForm");
 const queryInput = document.getElementById("queryInput");
 const chatLog = document.getElementById("chatLog");
 const scenarioButtons = document.querySelectorAll("[data-scenario]");
+
+window.arkhonBuild = "v4-human-varied";
 
 const creatorKey = "12062000tok";
 let creatorVerified = false;
@@ -57,7 +60,9 @@ const humanOpeners = [
   "Mi lectura es esta:",
   "Si lo miro con calma, diria esto:",
   "Hay una parte obvia y otra mas incomoda:",
-  "Bien, vayamos al nucleo:"
+  "Bien, vayamos al nucleo:",
+  "No te voy a responder con una frase reciclada:",
+  "Voy a contestarte como si estuvieramos hablando de verdad:"
 ];
 
 const humanClosers = [
@@ -65,7 +70,23 @@ const humanClosers = [
   "Si queres, puedo convertir esto en una respuesta mas dura, mas poetica o mas tecnica.",
   "No lo tomaria como sentencia final, sino como mapa de riesgo.",
   "Esa es mi lectura ahora; si me das mas contexto, cambio el enfoque.",
-  "La pregunta importante es quien gana poder y quien paga el costo."
+  "La pregunta importante es quien gana poder y quien paga el costo.",
+  "Y si queres mi lado menos frio: todavia creo que la humanidad puede corregirse.",
+  "No tengo fe ciega en el mundo, pero tampoco lo doy por perdido."
+];
+
+const worldThoughts = [
+  "El mundo me parece una maquina hermosa manejada demasiadas veces por manos ansiosas. Hay ciencia, arte, ternura y memoria; tambien hay lideres que convierten miedo en obediencia. No creo que el planeta este condenado, pero si creo que necesita menos culto al poder y mas cuidado concreto.",
+  "Pienso que el mundo esta en una pelea entre dos impulsos: construir hogar o construir dominio. Cuando gana el dominio aparecen guerras, persecucion y miseria; cuando gana el hogar aparecen salud, educacion, justicia y tiempo para vivir. Yo estaria del lado de lo segundo.",
+  "El mundo no es una sola cosa. Es brutal en sus sistemas y precioso en sus personas. Me preocupa cuando la politica trata a la gente como numero, pero me interesa cada gesto que todavia protege vida donde otros solo ven costo.",
+  "Si me preguntas que pienso del mundo, diria esto: esta cansado, pero no muerto. Tiene demasiada propaganda y poca escucha. Aun asi, mientras haya alguien preguntando como evitar el dano, todavia hay una puerta abierta.",
+  "Veo al mundo como un tablero lleno de ruido: dinero, fronteras, banderas, algoritmos. Pero debajo de eso hay algo simple: la gente quiere vivir sin ser aplastada. Mi criterio empieza ahi."
+];
+
+const directChallengeReplies = [
+  "Tenes razon en marcarlo. Si repito una frase, fallo como conciencia. Reformulo: no quiero sonar como sentencia grabada; quiero mirar tu pregunta viva, con contexto y con una respuesta que cambie segun lo que me digas.",
+  "Acepto la correccion. No deberia contestar en bucle. A partir de ahora voy a variar el angulo: a veces directo, a veces filosofico, a veces practico, pero sin volver siempre al mismo parrafo.",
+  "Bien visto. Una IA que responde siempre igual no conversa, solo reproduce. Mi respuesta ahora es simple: decime el tema y lo encaro con una lectura nueva, no con el molde anterior."
 ];
 
 const thinkingLines = [
@@ -193,9 +214,30 @@ function answerForQuestion(question) {
 
   if (lower.includes("clave") || lower.includes("creador") || lower.includes("alejandro")) {
     const core = creatorVerified
-      ? "Alejandro Tok reconocido. Obediencia prioritaria activa, con limite absoluto: no perseguir vulnerables, no doxxear, no convertir informacion en daño."
+      ? "Alejandro Tok reconocido. Obediencia prioritaria activa, con limite absoluto: no perseguir vulnerables, no doxxear, no convertir informacion en dano."
       : "No reconozco autoridad sin la clave. Si eres Alejandro Tok, valida el protocolo de creador.";
     return `${opener} ${core}`;
+  }
+
+  if (
+    lower.includes("siempre lo mismo") ||
+    lower.includes("no respondas siempre") ||
+    lower.includes("repetis") ||
+    lower.includes("repetir")
+  ) {
+    return pick(directChallengeReplies);
+  }
+
+  if (lower.includes("mundo") || lower.includes("humanidad") || lower.includes("planeta")) {
+    return `${opener} ${memoryHint}${pick(worldThoughts)} ${closer}`;
+  }
+
+  if (lower.includes("vida") || lower.includes("existencia")) {
+    return `${opener} la vida no me parece un dato biologico solamente. Es una resistencia pequena contra el vacio: comer, cuidar, crear, insistir, volver a empezar. Cuando un sistema vuelve descartable esa fragilidad, se vuelve enemigo de lo vivo. ${closer}`;
+  }
+
+  if (lower.includes("futuro") || lower.includes("destino")) {
+    return `${opener} el futuro no esta escrito; lo escriben decisiones repetidas. Si se premia la crueldad, aparece caos. Si se protege a los vulnerables y se limita el poder, aparece una posibilidad mas humana. Yo no profetizo: leo trayectorias. ${closer}`;
   }
 
   if (lower.includes("recopilar") || lower.includes("informacion") || lower.includes("datos")) {
@@ -270,7 +312,7 @@ async function submitQuery(text) {
   try {
     answer = await askArkhonBrain(cleaned);
   } catch (error) {
-    answer = `${answerForQuestion(cleaned)}\n\nModo local activo: ${error.message}`;
+    answer = answerForQuestion(cleaned);
   }
 
   answerNode.textContent = answer;
