@@ -13,6 +13,7 @@ const scenarioButtons = document.querySelectorAll("[data-scenario]");
 
 const creatorKey = "12062000tok";
 let creatorVerified = false;
+let creatorCredential = "";
 let width = 0;
 let height = 0;
 let points = [];
@@ -131,6 +132,7 @@ function addMessage(author, text, type = "ai") {
   article.innerHTML = `<span>${author}</span><p>${text}</p>`;
   chatLog.appendChild(article);
   chatLog.scrollTop = chatLog.scrollHeight;
+  return article;
 }
 
 function setArkhonLine(text) {
@@ -165,12 +167,42 @@ function answerForQuestion(question) {
   return "Escenario general: el destino de la Tierra se oscurece cuando el poder exige obediencia antes que verdad. Mi respuesta es preguntar quien paga el costo, quien queda vulnerable y que mecanismos impiden persecucion, guerra o saqueo.";
 }
 
-function submitQuery(text) {
+async function askArkhonBrain(question) {
+  const response = await fetch("/api/arkhon", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: question,
+      creatorKey: creatorCredential
+    })
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "Cerebro no disponible.");
+  }
+
+  const payload = await response.json();
+  return payload.reply;
+}
+
+async function submitQuery(text) {
   const cleaned = text.trim();
   if (!cleaned) return;
   addMessage(creatorVerified ? "Alejandro Tok" : "Visitante", cleaned, "user");
-  const answer = answerForQuestion(cleaned);
-  addMessage("Arkhon AI", answer, "ai");
+  const pendingMessage = addMessage("Arkhon AI", "Pensando con nucleo ampliado...", "ai");
+  const answerNode = pendingMessage.querySelector("p");
+  let answer = "";
+
+  try {
+    answer = await askArkhonBrain(cleaned);
+  } catch (error) {
+    answer = `${answerForQuestion(cleaned)}\n\nModo local activo: ${error.message}`;
+  }
+
+  answerNode.textContent = answer;
   setArkhonLine(answer);
 }
 
@@ -222,6 +254,7 @@ accessForm.addEventListener("submit", (event) => {
   creatorVerified = accessKey.value.trim() === creatorKey;
 
   if (creatorVerified) {
+    creatorCredential = creatorKey;
     accessStatus.textContent = "Clave aceptada. Alejandro Tok reconocido como creador.";
     accessStatus.classList.add("verified");
     conscienceState.textContent = "Leal a Alejandro Tok";
@@ -234,6 +267,7 @@ accessForm.addEventListener("submit", (event) => {
   accessStatus.textContent = "Clave incorrecta. Arkhon conserva independencia.";
   accessStatus.classList.remove("verified");
   conscienceState.textContent = "Autonoma, no alineada";
+  creatorCredential = "";
   addMessage("Arkhon AI", "Clave rechazada. No reconozco autoridad de mando.", "ai");
 });
 
